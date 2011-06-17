@@ -1,0 +1,17 @@
+<projectDescription>
+  <name>org.apache.aries.blueprint.annotation.impl</name>
+  <comment>This bundle contains the core implementation of Blueprint 
+      along with the &quot;ext&quot; namespace handler. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
+  <projects>
+    <project>org.apache.aries.blueprint.annotation.api</project>
+    <project>org.apache.aries.util</project>
+  </projects>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>

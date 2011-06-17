@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="src/test/java"/>
+	<classpathentry excluding="**/*.java" including="**/*" kind="src" output="target/test-classes" path="src/test/resources"/>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry excluding="**/*.java" kind="src" path="src/main/resources"/>
+	<classpathentry kind="var" path="M2_REPO/asm/asm-all/3.2/asm-all-3.2.jar"/>
+	<classpathentry kind="var" path="M2_REPO/junit/junit/4.8.1/junit-4.8.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/apache/aries/blueprint/org.apache.aries.blueprint.annotation.api/0.3/org.apache.aries.blueprint.annotation.api-0.3.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/apache/aries/blueprint/org.apache.aries.blueprint.api/0.3/org.apache.aries.blueprint.api-0.3.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/apache/aries/testsupport/org.apache.aries.testsupport.unit/0.3/org.apache.aries.testsupport.unit-0.3.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/osgi/org.osgi.compendium/4.2.0/org.osgi.compendium-4.2.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/osgi/org.osgi.core/4.2.0/org.osgi.core-4.2.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/eclipse/osgi/3.5.0.v20090520/osgi-3.5.0.v20090520.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-api/1.5.11/slf4j-api-1.5.11.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-simple/1.5.11/slf4j-simple-1.5.11.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/J2SE-1.5"/>
+	<classpathentry kind="lib" path="/Users/vmahrwald/.m2/repository/org/apache/aries/org.apache.aries.util/0.4-SNAPSHOT/org.apache.aries.util-0.4-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="/Users/vmahrwald/.m2/repository/org/apache/aries/quiesce/org.apache.aries.quiesce.api/0.4-SNAPSHOT/org.apache.aries.quiesce.api-0.4-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="/Users/vmahrwald/.m2/repository/org/apache/aries/proxy/org.apache.aries.proxy.api/0.4-SNAPSHOT/org.apache.aries.proxy.api-0.4-SNAPSHOT.jar"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>

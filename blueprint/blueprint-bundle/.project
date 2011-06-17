@@ -1,0 +1,23 @@
+<projectDescription>
+  <name>org.apache.aries.blueprint</name>
+  <comment>This bundle contains the standalone implementation along with the API.
+        It&apos;s composed of the blueprint-api, blueprint-core and blueprint-cm modules. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
+  <projects>
+    <project>org.apache.aries.blueprint.api</project>
+    <project>org.apache.aries.blueprint.cm</project>
+    <project>org.apache.aries.blueprint.core</project>
+    <project>org.apache.aries.proxy</project>
+    <project>org.apache.aries.proxy.api</project>
+    <project>org.apache.aries.proxy.impl</project>
+    <project>org.apache.aries.quiesce.api</project>
+    <project>org.apache.aries.util</project>
+  </projects>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>

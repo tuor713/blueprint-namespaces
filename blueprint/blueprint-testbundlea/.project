@@ -1,0 +1,18 @@
+<projectDescription>
+  <name>org.apache.aries.blueprint.testbundlea</name>
+  <comment>Blueprint Test Bundle A, provides NamespaceHandler, BeanProcessor etc implementations for Test Bundle B. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
+  <projects>
+    <project>org.apache.aries.blueprint.api</project>
+    <project>org.apache.aries.blueprint.core</project>
+    <project>org.apache.aries.proxy.api</project>
+    <project>org.apache.aries.util</project>
+  </projects>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
