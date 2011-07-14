@@ -18,13 +18,7 @@
  */
 package org.apache.aries.blueprint.container;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.net.URL;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,9 +37,7 @@ import org.apache.aries.blueprint.ExtendedServiceReferenceMetadata;
 import org.apache.aries.blueprint.di.AbstractRecipe;
 import org.apache.aries.blueprint.di.CollectionRecipe;
 import org.apache.aries.blueprint.di.Recipe;
-import org.apache.aries.blueprint.utils.BundleDelegatingClassLoader;
 import org.apache.aries.blueprint.utils.ReflectionUtils;
-import org.apache.aries.proxy.UnableToProxyException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceEvent;
@@ -121,7 +113,7 @@ public abstract class AbstractServiceReferenceRecipe extends AbstractRecipe impl
                 // though this may not be sufficient because we don't control ordering of those events
                 synchronized (references) {
                     blueprintContainer.getBundleContext().addServiceListener(this, getOsgiFilter());
-                    ServiceReference[] references = blueprintContainer.getBundleContext().getServiceReferences(null, getOsgiFilter());
+                    ServiceReference[] references = blueprintContainer.getBundleContext().getServiceReferences((String) null, getOsgiFilter());
                     if (references != null) {
                         for (ServiceReference reference : references) {
                             this.references.add(reference);
@@ -379,12 +371,12 @@ public abstract class AbstractServiceReferenceRecipe extends AbstractRecipe impl
         private ReferenceListener metadata;
         private ExtendedBlueprintContainer blueprintContainer;
 
-        private Set<Method> bindMethodsReference = new HashSet<Method>();
-        private Set<Method> bindMethodsObjectProp = new HashSet<Method>();
-        private Set<Method> bindMethodsObject = new HashSet<Method>();
-        private Set<Method> unbindMethodsReference = new HashSet<Method>();
-        private Set<Method> unbindMethodsObject = new HashSet<Method>();
-        private Set<Method> unbindMethodsObjectProp = new HashSet<Method>();
+        private final Set<Method> bindMethodsReference = new HashSet<Method>();
+        private final Set<Method> bindMethodsObjectProp = new HashSet<Method>();
+        private final Set<Method> bindMethodsObject = new HashSet<Method>();
+        private final Set<Method> unbindMethodsReference = new HashSet<Method>();
+        private final Set<Method> unbindMethodsObject = new HashSet<Method>();
+        private final Set<Method> unbindMethodsObjectProp = new HashSet<Method>();
 
         public void setListener(Object listener) {
             this.listener = listener;

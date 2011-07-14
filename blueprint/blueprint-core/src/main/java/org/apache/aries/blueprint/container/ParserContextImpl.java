@@ -20,6 +20,7 @@ package org.apache.aries.blueprint.container;
 
 import org.apache.aries.blueprint.ComponentDefinitionRegistry;
 import org.apache.aries.blueprint.ParserContext;
+import org.apache.aries.blueprint.metadata.Builder;
 import org.apache.aries.blueprint.reflect.MetadataUtil;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
 import org.osgi.service.blueprint.reflect.Metadata;
@@ -87,5 +88,9 @@ public class ParserContextImpl implements ParserContext {
 
     public String getDefaultTimeout() {
         return parser.getDefaultTimeout();
+    }
+    
+    public Builder getMetadataBuilder() {
+    	return new MetadataBuilder(); 
     }
 }

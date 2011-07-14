@@ -107,7 +107,7 @@ public class BlueprintExtender implements BundleActivator, SynchronousBundleList
         // Create and publish a ParserService
         parserServiceReg = ctx.registerService(ParserService.class.getName(), 
             new ParserServiceImpl (handlers), 
-            new Hashtable<Object, Object>()); 
+            new Hashtable<String, Object>()); 
 
         try{
             ctx.getBundle().loadClass(QUIESCE_PARTICIPANT_CLASS);
@@ -115,7 +115,7 @@ public class BlueprintExtender implements BundleActivator, SynchronousBundleList
 
             quiesceParticipantReg = ctx.registerService(QUIESCE_PARTICIPANT_CLASS, 
               new BlueprintQuiesceParticipant(ctx, this), 
-              new Hashtable<Object, Object>()); 
+              new Hashtable<String, Object>()); 
         } 
         catch (ClassNotFoundException e) 
         {
@@ -138,7 +138,7 @@ public class BlueprintExtender implements BundleActivator, SynchronousBundleList
             // Also check bundles in the starting state with a lazy activation
             // policy
         } else if (b.getState() == Bundle.STARTING) {
-            String activationPolicyHeader = (String) b.getHeaders().get(
+            String activationPolicyHeader = b.getHeaders().get(
                     Constants.BUNDLE_ACTIVATIONPOLICY);
             if (activationPolicyHeader != null
                     && activationPolicyHeader
@@ -253,8 +253,8 @@ public class BlueprintExtender implements BundleActivator, SynchronousBundleList
         LOGGER.debug("Scanning bundle {} for blueprint application", bundle.getSymbolicName());
         try {
             List<Object> pathList = new ArrayList<Object>();
-            String blueprintHeader = (String) bundle.getHeaders().get(BlueprintConstants.BUNDLE_BLUEPRINT_HEADER);
-            String blueprintHeaderAnnotation = (String) bundle.getHeaders().get(BlueprintConstants.BUNDLE_BLUEPRINT_ANNOTATION_HEADER);
+            String blueprintHeader = bundle.getHeaders().get(BlueprintConstants.BUNDLE_BLUEPRINT_HEADER);
+            String blueprintHeaderAnnotation = bundle.getHeaders().get(BlueprintConstants.BUNDLE_BLUEPRINT_ANNOTATION_HEADER);
             if (blueprintHeader == null) {
                 blueprintHeader = "OSGI-INF/blueprint/";
             } 

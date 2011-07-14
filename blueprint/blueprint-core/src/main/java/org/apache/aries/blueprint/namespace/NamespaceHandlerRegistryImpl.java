@@ -21,6 +21,7 @@ package org.apache.aries.blueprint.namespace;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -48,6 +49,9 @@ import org.apache.aries.blueprint.container.NamespaceHandlerRegistry;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
@@ -71,15 +75,14 @@ public class NamespaceHandlerRegistryImpl implements NamespaceHandlerRegistry, S
     private static final Logger LOGGER = LoggerFactory.getLogger(NamespaceHandlerRegistryImpl.class);
 
     private final BundleContext bundleContext;
-    private final Map<URI, Set<NamespaceHandler>> handlers;
+    private final Map<URI, Map<NamespaceHandler,ServiceReference<NamespaceHandler>>> handlers;
     private final ServiceTracker tracker;
     private final Map<Map<URI, NamespaceHandler>, Reference<Schema>> schemas = new LRUMap<Map<URI, NamespaceHandler>, Reference<Schema>>(10);
-    private SchemaFactory schemaFactory;
-    private List<NamespaceHandlerSetImpl> sets;
+    private final List<NamespaceHandlerSetImpl> sets;
 
     public NamespaceHandlerRegistryImpl(BundleContext bundleContext) {
         this.bundleContext = bundleContext;
-        handlers = new HashMap<URI, Set<NamespaceHandler>>();
+        handlers = new HashMap<URI, Map<NamespaceHandler, ServiceReference<NamespaceHandler>>>();
         sets = new ArrayList<NamespaceHandlerSetImpl>();
         tracker = new ServiceTracker(bundleContext, NamespaceHandler.class.getName(), this);
         tracker.open();
@@ -94,7 +97,7 @@ public class NamespaceHandlerRegistryImpl implements NamespaceHandlerRegistry, S
                 for (String name : reference.getPropertyKeys()) {
                     props.put(name, reference.getProperty(name));
                 }
-                registerHandler(handler, props);
+                registerHandler(handler, reference, props);
             } catch (Exception e) {
                 LOGGER.warn("Error registering NamespaceHandler", e);
             }
@@ -122,15 +125,15 @@ public class NamespaceHandlerRegistryImpl implements NamespaceHandlerRegistry, S
         }
     }
 
-    public synchronized void registerHandler(NamespaceHandler handler, Map properties) {
+    public synchronized void registerHandler(NamespaceHandler handler, ServiceReference<NamespaceHandler> ref, Map properties) {
         List<URI> namespaces = getNamespaces(properties);
         for (URI uri : namespaces) {
-            Set<NamespaceHandler> h = handlers.get(uri);
+            Map<NamespaceHandler, ServiceReference<NamespaceHandler>> h = handlers.get(uri);
             if (h == null) {
-                h = new HashSet<NamespaceHandler>();
+                h = new HashMap<NamespaceHandler, ServiceReference<NamespaceHandler>>();
                 handlers.put(uri, h);
             }
-            if (h.add(handler)) {
+            if (h.put(handler, ref) == null) {
                 for (NamespaceHandlerSetImpl s : sets) {
                     s.registerHandler(uri, handler);
                 }
@@ -141,10 +144,11 @@ public class NamespaceHandlerRegistryImpl implements NamespaceHandlerRegistry, S
     public synchronized void unregisterHandler(NamespaceHandler handler, Map properties) {
         List<URI> namespaces = getNamespaces(properties);
         for (URI uri : namespaces) {
-            Set<NamespaceHandler> h = handlers.get(uri);
-            if (h == null || !h.remove(handler)) {
+            Map<NamespaceHandler, ServiceReference<NamespaceHandler>> h = handlers.get(uri);
+            if (h == null || h.remove(handler) == null) {
                 continue;
             }
+
             for (NamespaceHandlerSetImpl s : sets) {
                 s.unregisterHandler(uri, handler);
             }
@@ -371,43 +375,103 @@ public class NamespaceHandlerRegistryImpl implements NamespaceHandlerRegistry, S
         }
 
         private NamespaceHandler findCompatibleNamespaceHandler(URI ns) {
-            Set<NamespaceHandler> candidates = NamespaceHandlerRegistryImpl.this.handlers.get(ns);
-            if (candidates != null) {
-                for (NamespaceHandler h : candidates) {
-                    Set<Class> classes = h.getManagedClasses();
-                    boolean compat = true;
-                    if (classes != null) {
-                        Set<Class> allClasses = new HashSet<Class>();
-                        for (Class cl : classes) {
-                            for (Class c = cl; c != null; c = c.getSuperclass()) {
-                                allClasses.add(c);
-                                for (Class i : c.getInterfaces()) {
-                                    allClasses.add(i);
-                                }
-                            }
-                        }
-                        for (Class cl : allClasses) {
-                            Class clb;
-                            try {
-                                clb = bundle.loadClass(cl.getName());
-                                if (clb != cl) {
-                                    compat = false;
-                                    break;
-                                }
-                            } catch (ClassNotFoundException e) {
-                                // Ignore
-                            } catch (NoClassDefFoundError e) {
-                                // Ignore
-                            }
-                        }
-                    }
-                    if (compat) {
-                        handlers.put(ns, h);
-                        return h;
-                    }
-                }
+            Map<NamespaceHandler, ServiceReference<NamespaceHandler>> nsmap = NamespaceHandlerRegistryImpl.this.handlers.get(ns);
+            
+            if (nsmap == null) return null;
+            
+            Collection<NamespaceHandler> candidates = nsmap.keySet();
+            
+            BundleWiring wiring = bundle.adapt(BundleWiring.class);
+            
+            List<BundleWire> wires = wiring.getRequiredWires("org.apache.aries.blueprint.NamespaceHandler");
+            for (BundleWire wire : wires) {
+            	String wireNs = (String) wire.getCapability().getAttributes().get("osgi.service.blueprint.namespace");
+            	
+            	try {
+					if (wireNs != null && ns.equals(new URI(wireNs))) {
+						candidates = new ArrayList<NamespaceHandler>(candidates);
+						Iterator<NamespaceHandler> it = candidates.iterator();
+						
+						while (it.hasNext()) {
+							NamespaceHandler handler = it.next();
+							ServiceReference<NamespaceHandler> ref = nsmap.get(handler);
+							
+							// different provider bundle
+							if (!!!ref.getBundle().equals(wire.getProviderWiring().getBundle())) {
+								it.remove();
+							} else {
+								Version capabilityVersion = (Version) wire.getCapability().getAttributes().get("version");
+								Version serviceVersion = (Version) ref.getProperty("version");
+								
+								// version mismatch, same provider but a different version, so the provider obviously has
+								// multiple competing versions to offer
+								if ((capabilityVersion != null && !!!capabilityVersion.equals(serviceVersion)) || (capabilityVersion == null && serviceVersion != null)) {
+									it.remove();
+								}
+							}							
+						}
+						
+					}
+				} catch (URISyntaxException e) {
+					LOGGER.error("Non-URI blueprint namespace {}", wireNs);
+				}
             }
-            return null;
+            
+            Iterator<NamespaceHandler> it = candidates.iterator();
+            while (it.hasNext()) {
+            	NamespaceHandler h = it.next();
+            	Set<Class> classes = h.getManagedClasses();
+            	boolean compat = true;
+            	if (classes != null) {
+            		Set<Class> allClasses = new HashSet<Class>();
+            		for (Class cl : classes) {
+            			for (Class c = cl; c != null; c = c.getSuperclass()) {
+            				allClasses.add(c);
+            				for (Class i : c.getInterfaces()) {
+            					allClasses.add(i);
+            				}
+            			}
+            		}
+            		for (Class cl : allClasses) {
+            			Class clb;
+            			try {
+            				clb = bundle.loadClass(cl.getName());
+            				if (clb != cl) {
+            					compat = false;
+            					break;
+            				}
+            			} catch (ClassNotFoundException e) {
+            				// Ignore
+            			} catch (NoClassDefFoundError e) {
+            				// Ignore
+            			}
+            		}
+            	}
+            	
+            	if (!compat) it.remove();
+            }
+            
+            // pick highest version
+            
+            NamespaceHandler best = null;
+            Version bestVersion = null;
+            
+            for (NamespaceHandler cand : candidates) {
+            	ServiceReference<NamespaceHandler> ref = nsmap.get(cand);
+            	Version version = (Version) ref.getProperty("version");
+            	if (version == null) version = new Version("0.0.0");
+            	
+            	if (best == null || version.compareTo(bestVersion) > 0) {
+            		best = cand;
+            		bestVersion = version;
+            	}
+            }
+            
+            if (best != null) {
+            	handlers.put(ns, best);
+            }
+            
+            return best;
         }
     }
 

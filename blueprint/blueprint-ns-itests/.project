@@ -1,0 +1,18 @@
+<projectDescription>
+  <name>org.apache.aries.blueprint.ns-itests</name>
+  <comment>Integration tests using the standalone blueprint-bundle for the implementation
+        and blueprint-sample for the blueprint application to be tested. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
+  <projects>
+    <project>org.apache.aries.blueprint</project>
+    <project>org.apache.aries.blueprint.cm</project>
+    <project>org.apache.aries.blueprint.core</project>
+  </projects>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>

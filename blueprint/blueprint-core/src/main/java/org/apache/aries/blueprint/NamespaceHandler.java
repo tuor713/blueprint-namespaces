@@ -70,6 +70,9 @@ public interface NamespaceHandler  {
     URL getSchemaLocation(String namespace);
 
     /**
+     * --- Is this still needed? ---
+     * 
+     * 
      * Specify a set of classes that must be consistent between a blueprint bundle and this namespace handler
      * 
      * The blueprint extender will not invoke a namespace handler if any of the managed classes are inconsistent

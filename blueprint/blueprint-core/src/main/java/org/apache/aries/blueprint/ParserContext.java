@@ -16,6 +16,7 @@
  */
 package org.apache.aries.blueprint;
 
+import org.apache.aries.blueprint.metadata.Builder;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
 import org.osgi.service.blueprint.reflect.Metadata;
 import org.w3c.dom.Element;
@@ -86,5 +87,7 @@ public interface ParserContext  {
      * Get the default timeout setting for the current blueprint file
      */
     String getDefaultTimeout();
+    
+    Builder getMetadataBuilder();
 }
 

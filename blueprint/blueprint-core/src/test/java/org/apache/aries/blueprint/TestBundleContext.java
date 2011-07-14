@@ -20,6 +20,7 @@ package org.apache.aries.blueprint;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Dictionary;
 
 import org.osgi.framework.Bundle;
@@ -77,10 +78,6 @@ public class TestBundleContext implements BundleContext {
         return null;
     }
 
-    public Object getService(ServiceReference arg0) {
-        return null;
-    }
-
     public ServiceReference getServiceReference(String arg0) {
         return null;
     }
@@ -98,14 +95,6 @@ public class TestBundleContext implements BundleContext {
         return null;
     }
 
-    public ServiceRegistration registerService(String[] arg0, Object arg1, Dictionary arg2) {
-        return null;
-    }
-
-    public ServiceRegistration registerService(String arg0, Object arg1, Dictionary arg2) {
-        return null;
-    }
-
     public void removeBundleListener(BundleListener arg0) {
     }
 
@@ -115,8 +104,40 @@ public class TestBundleContext implements BundleContext {
     public void removeServiceListener(ServiceListener arg0) {
     }
 
-    public boolean ungetService(ServiceReference arg0) {
-        return false;
-    }
+	public ServiceRegistration<?> registerService(String[] clazzes,
+			Object service, Dictionary<String, ?> properties) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	public ServiceRegistration<?> registerService(String clazz, Object service,
+			Dictionary<String, ?> properties) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	public <S> ServiceRegistration<S> registerService(Class<S> clazz,
+			S service, Dictionary<String, ?> properties) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	public <S> ServiceReference<S> getServiceReference(Class<S> clazz) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	public <S> Collection<ServiceReference<S>> getServiceReferences(
+			Class<S> clazz, String filter) throws InvalidSyntaxException {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	public <S> S getService(ServiceReference<S> reference) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	public boolean ungetService(ServiceReference<?> reference) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
+
+	public Bundle getBundle(String location) {
+		throw new UnsupportedOperationException("not implemented yet");
+	}
 
 }
