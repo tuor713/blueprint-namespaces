@@ -1,0 +1,11 @@
+Experimental branch for Apache Aries Blueprint to test namespace handler spec
+-----------------------------------------------------------------------------
+
+Currently implemented:
+- Metadata builder API
+- Generic capabilities based selection of namespace handlers
+
+Still to do:
+- Remove ExtNamespaceHandler hacks (like runtime class)
+- Implement namespace handler lifecycle handling (i.e. recycle on namespace handler going away)
+- ...
