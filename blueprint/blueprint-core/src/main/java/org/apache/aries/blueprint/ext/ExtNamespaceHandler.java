@@ -27,21 +27,17 @@ import java.util.Set;
 
 import org.apache.aries.blueprint.ExtendedReferenceListMetadata;
 import org.apache.aries.blueprint.ParserContext;
-import org.apache.aries.blueprint.mutable.MutableBeanMetadata;
-import org.apache.aries.blueprint.mutable.MutableCollectionMetadata;
-import org.apache.aries.blueprint.mutable.MutableComponentMetadata;
-import org.apache.aries.blueprint.mutable.MutableIdRefMetadata;
-import org.apache.aries.blueprint.mutable.MutableMapMetadata;
-import org.apache.aries.blueprint.mutable.MutableRefMetadata;
-import org.apache.aries.blueprint.mutable.MutableReferenceMetadata;
-import org.apache.aries.blueprint.mutable.MutableServiceReferenceMetadata;
-import org.apache.aries.blueprint.mutable.MutableValueMetadata;
+import org.apache.aries.blueprint.metadata.Builder;
+import org.apache.aries.blueprint.metadata.MutableBeanMetadata;
+import org.apache.aries.blueprint.metadata.MutableComponentMetadata;
+import org.apache.aries.blueprint.metadata.MutableReferenceMetadata;
+import org.apache.aries.blueprint.metadata.MutableServiceReferenceMetadata;
 import org.osgi.service.blueprint.container.ComponentDefinitionException;
 import org.osgi.service.blueprint.reflect.BeanMetadata;
 import org.osgi.service.blueprint.reflect.BeanProperty;
 import org.osgi.service.blueprint.reflect.CollectionMetadata;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
-import org.osgi.service.blueprint.reflect.IdRefMetadata;
+import org.osgi.service.blueprint.reflect.MapEntry;
 import org.osgi.service.blueprint.reflect.Metadata;
 import org.osgi.service.blueprint.reflect.RefMetadata;
 import org.osgi.service.blueprint.reflect.ReferenceListMetadata;
@@ -98,6 +94,13 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
     
     public static final String DEFAULT_REFERENCE_BEAN = "default";
 
+
+    public static String FIELD_INJECTION_KEY = "field-injection";
+    public static String DEFAULT_BEAN_KEY = "default-bean";
+    public static String PROCESSOR_KEY = "processor";
+    public static String PROXY_METHOD_KEY = "proxy-method";
+    public static String RUNTIME_CLASS_KEY = "runtime-class";
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtNamespaceHandler.class);
 
     private int idCounter;
@@ -163,7 +166,7 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
         }
         
         String value = ((Attr) node).getValue();
-        ((MutableReferenceMetadata) component).setDefaultBean(value);
+        ((MutableReferenceMetadata<?>) component).addCustomData(ExtNamespaceHandler.class, DEFAULT_BEAN_KEY, value);
         return component;
     }
 
@@ -177,7 +180,7 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
         }
         
         String value = ((Attr) node).getValue();
-        ((MutableBeanMetadata) component).setFieldInjection("true".equals(value) || "1".equals(value));
+        ((MutableBeanMetadata<?>) component).addCustomData(ExtNamespaceHandler.class, FIELD_INJECTION_KEY, "true".equals(value) || "1".equals(value));
         return component;
     }
 
@@ -198,7 +201,7 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
                 throw new ComponentDefinitionException("Unknown proxy method: " + flag);
             }
         }
-        ((MutableBeanMetadata) component).setProcessor(processor);
+        ((MutableBeanMetadata<?>) component).addCustomData(ExtNamespaceHandler.class, PROCESSOR_KEY, processor);
         return component;
     }
 
@@ -226,36 +229,41 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
         if ((method & ExtendedReferenceListMetadata.PROXY_METHOD_GREEDY) != 0 && !(component instanceof ReferenceListMetadata)) {
             throw new ComponentDefinitionException("Greedy proxying is only available for <reference-list> element");
         }
-        ((MutableServiceReferenceMetadata) component).setProxyMethod(method);
+        ((MutableServiceReferenceMetadata<?,?>) component).addCustomData(ExtNamespaceHandler.class, PROXY_METHOD_KEY, method);
         return component;
     }
 
     private Metadata parsePropertyPlaceholder(ParserContext context, Element element) {
-        MutableBeanMetadata metadata = context.createMetadata(MutableBeanMetadata.class);
-        metadata.setProcessor(true);
-        metadata.setId(getId(context, element));
-        metadata.setScope(BeanMetadata.SCOPE_SINGLETON);
-        metadata.setRuntimeClass(PropertyPlaceholder.class);
-        metadata.setInitMethod("init");
+    	Builder builder = context.getMetadataBuilder();
+    	
+        MutableBeanMetadata<?> metadata = builder.newBean();
+        
+        metadata.addCustomData(ExtNamespaceHandler.class, PROCESSOR_KEY, true);
+        metadata.addCustomData(ExtNamespaceHandler.class, RUNTIME_CLASS_KEY, PropertyPlaceholder.class);
+        
+        metadata.id(getId(context, element))
+        	.scope(BeanMetadata.SCOPE_SINGLETON)
+        	.initMethod("init");
         String prefix = element.hasAttribute(PLACEHOLDER_PREFIX_ATTRIBUTE)
                                     ? element.getAttribute(PLACEHOLDER_PREFIX_ATTRIBUTE)
                                     : "${";
-        metadata.addProperty("placeholderPrefix", createValue(context, prefix));
+        metadata.addProperty(builder.newBeanProperty().name("placeholderPrefix").value(createValue(context, prefix)));
+        
         String suffix = element.hasAttribute(PLACEHOLDER_SUFFIX_ATTRIBUTE)
                                     ? element.getAttribute(PLACEHOLDER_SUFFIX_ATTRIBUTE)
                                     : "}";
-        metadata.addProperty("placeholderSuffix", createValue(context, suffix));
+        metadata.addProperty(builder.newBeanProperty().name("placeholderSuffix").value(createValue(context, suffix)));
         String defaultsRef = element.hasAttribute(DEFAULTS_REF_ATTRIBUTE) ? element.getAttribute(DEFAULTS_REF_ATTRIBUTE) : null;
         if (defaultsRef != null) {
-            metadata.addProperty("defaultProperties", createRef(context, defaultsRef));
+            metadata.addProperty(builder.newBeanProperty().name("defaultProperties").value(createRef(context, defaultsRef)));
         }
         String ignoreMissingLocations = element.hasAttribute(IGNORE_MISSING_LOCATIONS_ATTRIBUTE) ? element.getAttribute(IGNORE_MISSING_LOCATIONS_ATTRIBUTE) : null;
         if (ignoreMissingLocations != null) {
-            metadata.addProperty("ignoreMissingLocations", createValue(context, ignoreMissingLocations));
+            metadata.addProperty(builder.newBeanProperty().name("ignoreMissingLocations").value(createValue(context, ignoreMissingLocations)));
         }
         String systemProperties = element.hasAttribute(SYSTEM_PROPERTIES_ATTRIBUTE) ? element.getAttribute(SYSTEM_PROPERTIES_ATTRIBUTE) : null;
         if (systemProperties != null) {
-            metadata.addProperty("systemProperties", createValue(context, systemProperties));
+            metadata.addProperty(builder.newBeanProperty().name("systemProperties").value(createValue(context, systemProperties)));
         }
         // Parse elements
         List<String> locations = new ArrayList<String>();
@@ -270,7 +278,7 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
                             throw new ComponentDefinitionException("Only one of " + DEFAULTS_REF_ATTRIBUTE + " attribute or " + DEFAULT_PROPERTIES_ELEMENT + " element is allowed");
                         }
                         Metadata props = parseDefaultProperties(context, metadata, e);
-                        metadata.addProperty("defaultProperties", props);
+                        metadata.addProperty(builder.newBeanProperty().name("defaultProperties").value(props));
                     } else if (nodeNameEquals(e, LOCATION_ELEMENT)) {
                         locations.add(getTextValue(e));
                     }
@@ -278,7 +286,7 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
             }
         }
         if (!locations.isEmpty()) {
-            metadata.addProperty("locations", createList(context, locations));
+            metadata.addProperty(builder.newBeanProperty().name("locations").value(createList(context, locations)));
         }
 
         PlaceholdersUtils.validatePlaceholder(metadata, context.getComponentDefinitionRegistry());
@@ -286,9 +294,11 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
         return metadata;
     }
 
-    private Metadata parseDefaultProperties(ParserContext context, MutableBeanMetadata enclosingComponent, Element element) {
-        MutableMapMetadata props = context.createMetadata(MutableMapMetadata.class);
+    private Metadata parseDefaultProperties(ParserContext context, MutableBeanMetadata<?> enclosingComponent, Element element) {
+        
         NodeList nl = element.getChildNodes();
+        
+        List<MapEntry> entries = new ArrayList<MapEntry>();
         for (int i = 0; i < nl.getLength(); i++) {
             Node node = nl.item(i);
             if (node instanceof Element) {
@@ -296,12 +306,15 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
                 if (BLUEPRINT_EXT_NAMESPACE_V1_0.equals(e.getNamespaceURI())) {
                     if (nodeNameEquals(e, PROPERTY_ELEMENT)) {
                         BeanProperty prop = context.parseElement(BeanProperty.class, enclosingComponent, e);
-                        props.addEntry(createValue(context, prop.getName(), String.class.getName()), prop.getValue());
+                        entries.add(
+                        		context.getMetadataBuilder().newMapEntry()
+                        			.key(createValue(context, prop.getName(), String.class.getName()))
+                        			.value(prop.getValue()));
                     }
                 }
             }
         }
-        return props;
+        return context.getMetadataBuilder().newMap().entries(entries);
     }
 
     public String getId(ParserContext context, Element element) {
@@ -312,9 +325,9 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
         }
     }
 
-    public void generateIdIfNeeded(ParserContext context, MutableComponentMetadata metadata) {
+    public void generateIdIfNeeded(ParserContext context, MutableComponentMetadata<?, ?> metadata) {
         if (metadata.getId() == null) {
-            metadata.setId(generateId(context));
+            metadata.id(generateId(context));
         }
     }
 
@@ -331,32 +344,22 @@ public class ExtNamespaceHandler implements org.apache.aries.blueprint.Namespace
     }
 
     private static ValueMetadata createValue(ParserContext context, String value, String type) {
-        MutableValueMetadata m = context.createMetadata(MutableValueMetadata.class);
-        m.setStringValue(value);
-        m.setType(type);
-        return m;
+    	return context.getMetadataBuilder().newValue().stringValue(value).type(type);
     }
 
     private static RefMetadata createRef(ParserContext context, String value) {
-        MutableRefMetadata m = context.createMetadata(MutableRefMetadata.class);
-        m.setComponentId(value);
-        return m;
-    }
-
-    private static IdRefMetadata createIdRef(ParserContext context, String value) {
-        MutableIdRefMetadata m = context.createMetadata(MutableIdRefMetadata.class);
-        m.setComponentId(value);
-        return m;
+    	return context.getMetadataBuilder().newRef().componentId(value);
     }
 
     private static CollectionMetadata createList(ParserContext context, List<String> list) {
-        MutableCollectionMetadata m = context.createMetadata(MutableCollectionMetadata.class);
-        m.setCollectionClass(List.class);
-        m.setValueType(String.class.getName());
+    	List<ValueMetadata> values = new ArrayList<ValueMetadata>();
         for (String v : list) {
-            m.addValue(createValue(context, v, String.class.getName()));
+            values.add(createValue(context, v, String.class.getName()));
         }
-        return m;
+    	return context.getMetadataBuilder().newCollection()
+    		.collectionClass(List.class)
+    		.valueType(String.class.getName())
+    		.values(values);
     }
 
     private static String getTextValue(Element element) {

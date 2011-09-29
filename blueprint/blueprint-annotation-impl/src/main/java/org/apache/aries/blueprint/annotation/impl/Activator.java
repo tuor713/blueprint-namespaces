@@ -20,7 +20,6 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 
 import org.apache.aries.blueprint.annotation.service.BlueprintAnnotationScanner;
-import org.apache.aries.util.AriesFrameworkUtil;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -28,16 +27,24 @@ import org.osgi.framework.ServiceRegistration;
 
 public class Activator implements BundleActivator {
 
-    ServiceRegistration sr;
-    
-    public void start(BundleContext context) {
-        Dictionary dict = new Hashtable();
-        dict.put(Constants.SERVICE_RANKING, 0);
-        sr = context.registerService(BlueprintAnnotationScanner.class.getName(), new BlueprintAnnotationScannerImpl(context), dict);
-    }
+	ServiceRegistration sr;
 
-    public void stop(BundleContext context) {
-      AriesFrameworkUtil.safeUnregisterService(sr);
-    }
-   
+	public void start(BundleContext context) {
+		Dictionary dict = new Hashtable();
+		dict.put(Constants.SERVICE_RANKING, 0);
+		sr = context.registerService(
+				BlueprintAnnotationScanner.class.getName(),
+				new BlueprintAnnotationScannerImpl(context), dict);
+	}
+
+	public void stop(BundleContext context) {
+		if (sr != null) {
+			try {
+				sr.unregister();
+			} catch (IllegalStateException e) {
+				// This can be safely ignored
+			}
+		}
+	}
+
 }

@@ -2,6 +2,7 @@ package org.apache.aries.blueprint.metadata;
 
 import java.util.List;
 
+import org.apache.aries.blueprint.NamespaceHandler;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
 
 /**
@@ -11,7 +12,7 @@ import org.osgi.service.blueprint.reflect.ComponentMetadata;
  *   with those defined on MutableComponentMetadata. Needs to be at least MutableComponentMetadata.
  */
 public interface MutableComponentMetadata<T extends ComponentMetadata, U extends MutableComponentMetadata<T,?>> 
-extends ComponentMetadata, MutableMetadata<T> {
+extends ComponentMetadata, MutableMetadata<T>, ExtensibleMetadata {
 
 	U id(String id);
 	U activation(int activation);
@@ -20,4 +21,10 @@ extends ComponentMetadata, MutableMetadata<T> {
 	U dependsOn(List<String> dependencies);
 	U addDependsOn(String dependency);
 	
+	
+	/**
+	 * Add bean specific extension data for the given namespace handler.
+	 */
+	void addCustomData(NamespaceHandler handler, Object key, Object data);
+	void addCustomData(Class<? extends NamespaceHandler> handler, Object key, Object data);	
 }

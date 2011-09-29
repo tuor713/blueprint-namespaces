@@ -20,7 +20,6 @@ package org.apache.aries.blueprint;
 
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -34,8 +33,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 import org.apache.aries.blueprint.container.NamespaceHandlerRegistry;
-import org.apache.aries.blueprint.reflect.BeanMetadataImpl;
-import org.osgi.framework.Bundle;
 import org.osgi.service.blueprint.reflect.BeanArgument;
 import org.osgi.service.blueprint.reflect.BeanMetadata;
 import org.osgi.service.blueprint.reflect.BeanProperty;
@@ -44,6 +41,7 @@ import org.osgi.service.blueprint.reflect.ComponentMetadata;
 import org.osgi.service.blueprint.reflect.Metadata;
 import org.osgi.service.blueprint.reflect.NullMetadata;
 import org.osgi.service.blueprint.reflect.RefMetadata;
+import org.osgi.service.blueprint.reflect.Target;
 import org.osgi.service.blueprint.reflect.ValueMetadata;
 import org.xml.sax.SAXException;
 
@@ -251,9 +249,6 @@ public class ParserTest extends AbstractBlueprintTest {
         }
 
         public Metadata parse(Element element, ParserContext context) {
-            String comp = (context.getEnclosingComponent() == null) ? null : context.getEnclosingComponent().getId();
-            //System.out.println("parse: " + element.getLocalName() + " " + comp);
-            
             String className;
             if (context.getEnclosingComponent() == null) {
                 className = "org.apache.aries.Cache";
@@ -261,22 +256,22 @@ public class ParserTest extends AbstractBlueprintTest {
                 className = "org.apache.aries.CacheProperty";
             }
                         
-            BeanMetadataImpl p = new BeanMetadataImpl();
-            p.setId(element.getAttribute("id"));
-            p.setClassName(className);
-            
-            return p;
+            return context.getMetadataBuilder()
+            	.newBean()
+            		.id(element.getAttribute("id"))
+            		.className(className);
         }
         
     }
     
-    private static class MyLocalComponentMetadata extends BeanMetadataImpl {
+    private static class MyLocalComponentMetadata implements BeanMetadata {
         
         private boolean cacheReturnValues;
         private String operation;
+        BeanMetadata delegate;
         
         public MyLocalComponentMetadata(BeanMetadata impl) {
-            super(impl);
+        	delegate = impl;
         }
         
         public boolean getCacheReturnValues() {
@@ -294,6 +289,52 @@ public class ParserTest extends AbstractBlueprintTest {
         public String getOperation() {
             return this.operation;
         }
+
+		public int getActivation() {
+			return delegate.getActivation();
+		}
+
+		public List<BeanArgument> getArguments() {
+			return delegate.getArguments();
+		}
+
+		public String getClassName() {
+			return delegate.getClassName();
+		}
+
+		public List<String> getDependsOn() {
+			return delegate.getDependsOn();
+		}
+
+		public String getDestroyMethod() {
+			return delegate.getDestroyMethod();
+		}
+
+		public Target getFactoryComponent() {
+			return delegate.getFactoryComponent();
+		}
+
+		public String getFactoryMethod() {
+			return delegate.getFactoryMethod();
+		}
+
+		public String getId() {
+			return delegate.getId();
+		}
+
+		public String getInitMethod() {
+			return delegate.getInitMethod();
+		}
+
+		public List<BeanProperty> getProperties() {
+			return delegate.getProperties();
+		}
+
+		public String getScope() {
+			return delegate.getScope();
+		}
+        
+        
     }
 
 }

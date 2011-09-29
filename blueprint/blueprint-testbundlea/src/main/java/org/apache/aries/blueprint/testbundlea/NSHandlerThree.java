@@ -21,7 +21,8 @@ import java.util.Set;
 
 import org.apache.aries.blueprint.NamespaceHandler;
 import org.apache.aries.blueprint.ParserContext;
-import org.apache.aries.blueprint.mutable.MutableBeanMetadata;
+import org.apache.aries.blueprint.ext.ExtNamespaceHandler;
+import org.apache.aries.blueprint.metadata.MutableBeanMetadata;
 import org.osgi.service.blueprint.reflect.BeanMetadata;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
 import org.osgi.service.blueprint.reflect.Metadata;
@@ -31,21 +32,20 @@ import org.w3c.dom.Node;
 public class NSHandlerThree implements NamespaceHandler{
     public static String NSURI = "http://ns.handler.three";
     
-    private static String ELT_NAME = "nshandlerthree";
     private static String ATTRIB_ONE = "attribone";
-    private static String ATTRIB_TWO = "attribtwo";
     
     public ComponentMetadata decorate(Node node, ComponentMetadata component,
             ParserContext context) {
         if(node.getLocalName().equals(ATTRIB_ONE)){
             if(component instanceof BeanMetadata){
-                if(context.getComponentDefinitionRegistry().getComponentDefinition(NSURI+"/BeanProcessor")==null){
-                    BeanMetadata bm = context.createMetadata(BeanMetadata.class);
-                    MutableBeanMetadata mbm = (MutableBeanMetadata)bm;
-                    mbm.setProcessor(true);
-                    mbm.setRuntimeClass(BeanProcessorTest.class);
-                    mbm.setScope(BeanMetadata.SCOPE_SINGLETON);
-                    mbm.setId(NSURI+"/BeanProcessor");
+                if(context.getComponentDefinitionRegistry().getComponentDefinition(NSURI+"/BeanProcessor")==null) {
+                	MutableBeanMetadata<BeanMetadata> mbm = context.getMetadataBuilder().newBean()
+                		.scope(BeanMetadata.SCOPE_SINGLETON)
+                		.id(NSURI+"/BeanProcessor");
+                	
+                	mbm.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.PROCESSOR_KEY, true);
+                	mbm.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY, BeanProcessorTest.class);
+                    
                     context.getComponentDefinitionRegistry().registerComponentDefinition(mbm);
                 }
             }

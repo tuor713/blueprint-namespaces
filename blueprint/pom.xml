@@ -39,9 +39,21 @@
     <modules>
         <module>blueprint-api</module>
         <module>blueprint-core</module>
+        <module>blueprint-annotation-api</module>
+        <module>blueprint-annotation-impl</module>
         <module>blueprint-cm</module>
         <module>blueprint-bundle</module>
+        
+        <module>blueprint-sample</module>
+        <module>blueprint-sample-annotation</module>
+        <module>blueprint-sample-fragment</module>
+        <module>blueprint-testbundlea</module>
+        <module>blueprint-testbundleb</module>
+        <module>blueprint-testquiescebundle</module>
+        
         <module>blueprint-ns-itests</module>
+        <module>blueprint-itests</module>
+        <module>blueprint-annotation-itest</module>
     </modules>
 
 </project>

@@ -23,27 +23,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.ops4j.pax.exam.CoreOptions.equinox;
 import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 import java.text.SimpleDateFormat;
 import java.util.Currency;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Set;
-
 import org.apache.aries.blueprint.sample.Bar;
 import org.apache.aries.blueprint.sample.Foo;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
-import org.osgi.framework.*;
 import org.osgi.service.blueprint.container.BlueprintContainer;
-import org.osgi.service.cm.Configuration;
-import org.osgi.service.cm.ConfigurationAdmin;
 
 @RunWith(JUnit4TestRunner.class)
 public class BlueprintAnnotationTest extends AbstractIntegrationTest {
@@ -112,7 +105,8 @@ public class BlueprintAnnotationTest extends AbstractIntegrationTest {
             mavenBundle("org.osgi", "org.osgi.compendium"),
             //org.ops4j.pax.exam.container.def.PaxRunnerOptions.vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 
-            equinox().version("3.5.0")
+            PaxRunnerOptions.rawPaxRunnerOption("config", "classpath:ss-runner.properties"),
+            equinox().version("3.7.0.v20110613")
         );
         options = updateOptions(options);
         return options;

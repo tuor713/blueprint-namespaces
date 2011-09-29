@@ -41,19 +41,16 @@ import org.apache.aries.blueprint.container.ParserContextImpl;
 import org.apache.aries.blueprint.container.ServiceListener;
 import org.apache.aries.blueprint.ext.ExtNamespaceHandler;
 import org.apache.aries.blueprint.ext.PlaceholdersUtils;
-import org.apache.aries.blueprint.mutable.MutableBeanMetadata;
-import org.apache.aries.blueprint.mutable.MutableCollectionMetadata;
-import org.apache.aries.blueprint.mutable.MutableComponentMetadata;
-import org.apache.aries.blueprint.mutable.MutableIdRefMetadata;
-import org.apache.aries.blueprint.mutable.MutableMapMetadata;
-import org.apache.aries.blueprint.mutable.MutableRefMetadata;
-import org.apache.aries.blueprint.mutable.MutableValueMetadata;
+import org.apache.aries.blueprint.metadata.Builder;
+import org.apache.aries.blueprint.metadata.MutableBeanMetadata;
+import org.apache.aries.blueprint.metadata.MutableComponentMetadata;
 import org.osgi.service.blueprint.container.ComponentDefinitionException;
 import org.osgi.service.blueprint.reflect.BeanMetadata;
 import org.osgi.service.blueprint.reflect.BeanProperty;
 import org.osgi.service.blueprint.reflect.CollectionMetadata;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
 import org.osgi.service.blueprint.reflect.IdRefMetadata;
+import org.osgi.service.blueprint.reflect.MapEntry;
 import org.osgi.service.blueprint.reflect.MapMetadata;
 import org.osgi.service.blueprint.reflect.Metadata;
 import org.osgi.service.blueprint.reflect.RefMetadata;
@@ -188,42 +185,50 @@ public class CmNamespaceHandler implements NamespaceHandler {
     }
 
     private ComponentMetadata parsePropertyPlaceholder(ParserContext context, Element element) {
-        MutableBeanMetadata metadata = context.createMetadata(MutableBeanMetadata.class);
-        metadata.setProcessor(true);
-        metadata.setId(getId(context, element));
-        metadata.setScope(BeanMetadata.SCOPE_SINGLETON);
-        metadata.setRuntimeClass(CmPropertyPlaceholder.class);
-        metadata.setInitMethod("init");
-        metadata.setDestroyMethod("destroy");
-        metadata.addProperty("blueprintContainer", createRef(context, "blueprintContainer"));
-        metadata.addProperty("configAdmin", createConfigAdminProxy(context));
-        metadata.addProperty("persistentId", createValue(context, element.getAttribute(PERSISTENT_ID_ATTRIBUTE)));
+    	Builder builder = context.getMetadataBuilder();
+    	MutableBeanMetadata<BeanMetadata> metadata = builder.newBean()
+    		.id(getId(context, element))
+    		.scope(BeanMetadata.SCOPE_SINGLETON)
+    		.initMethod("init")
+    		.destroyMethod("destroy")
+    		.addProperty(builder.newBeanProperty().name("blueprintContainer").value(createRef(context, "blueprintContainer")))
+    		.addProperty(builder.newBeanProperty().name("configAdmin").value(createConfigAdminProxy(context)))
+    		.addProperty(builder.newBeanProperty().name("persistentId").value(createValue(context, element.getAttribute(PERSISTENT_ID_ATTRIBUTE))));
+    	
+    	metadata.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.PROCESSOR_KEY, true);
+        metadata.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY, CmPropertyPlaceholder.class);        
+        
         String prefix = element.hasAttribute(PLACEHOLDER_PREFIX_ATTRIBUTE)
                                     ? element.getAttribute(PLACEHOLDER_PREFIX_ATTRIBUTE)
                                     : "${";
-        metadata.addProperty("placeholderPrefix", createValue(context, prefix));
+        metadata.addProperty(builder.newBeanProperty().name("placeholderPrefix").value(createValue(context, prefix)));
+        
         String suffix = element.hasAttribute(PLACEHOLDER_SUFFIX_ATTRIBUTE)
                                     ? element.getAttribute(PLACEHOLDER_SUFFIX_ATTRIBUTE)
                                     : "}";
-        metadata.addProperty("placeholderSuffix", createValue(context, suffix));
+        metadata.addProperty(builder.newBeanProperty().name("placeholderSuffix").value(createValue(context, suffix)));
+        
         String defaultsRef = element.hasAttribute(DEFAULTS_REF_ATTRIBUTE) ? element.getAttribute(DEFAULTS_REF_ATTRIBUTE) : null;
         if (defaultsRef != null) {
-            metadata.addProperty("defaultProperties", createRef(context, defaultsRef));
+            metadata.addProperty(builder.newBeanProperty().name("defaultProperties").value(createRef(context, defaultsRef)));
         }
         String ignoreMissingLocations = extractIgnoreMissingLocations(element);
         if (ignoreMissingLocations != null) {
-            metadata.addProperty("ignoreMissingLocations", createValue(context, ignoreMissingLocations));
+            metadata.addProperty(builder.newBeanProperty().name("ignoreMissingLocations").value(createValue(context, ignoreMissingLocations)));
         }
+        
         String systemProperties = extractSystemPropertiesAttribute(element);
         if (systemProperties == null) {
             systemProperties = ExtNamespaceHandler.SYSTEM_PROPERTIES_NEVER;
         }
-        metadata.addProperty("systemProperties", createValue(context, systemProperties));
+        metadata.addProperty(builder.newBeanProperty().name("systemProperties").value(createValue(context, systemProperties)));
+        
         String updateStrategy = element.getAttribute(UPDATE_STRATEGY_ATTRIBUTE);
         if (updateStrategy != null) {
-            metadata.addProperty("updateStrategy", createValue(context, updateStrategy));
+            metadata.addProperty(builder.newBeanProperty().name("updateStrategy").value(createValue(context, updateStrategy)));
         }
-        metadata.addProperty("managedObjectManager", createRef(context, MANAGED_OBJECT_MANAGER_NAME));
+        metadata.addProperty(builder.newBeanProperty().name("managedObjectManager").value(createRef(context, MANAGED_OBJECT_MANAGER_NAME)));
+        
         // Parse elements
         List<String> locations = new ArrayList<String>();
         NodeList nl = element.getChildNodes();
@@ -238,7 +243,7 @@ public class CmNamespaceHandler implements NamespaceHandler {
                             throw new ComponentDefinitionException("Only one of " + DEFAULTS_REF_ATTRIBUTE + " attribute or " + DEFAULT_PROPERTIES_ELEMENT + " element is allowed");
                         }
                         Metadata props = parseDefaultProperties(context, metadata, e);
-                        metadata.addProperty("defaultProperties", props);
+                        metadata.addProperty(builder.newBeanProperty().name("defaultProperties").value(props));
                     }
                 } else if (ExtNamespaceHandler.BLUEPRINT_EXT_NAMESPACE_V1_0.equals(e.getNamespaceURI())) {
                     if (nodeNameEquals(e, ExtNamespaceHandler.LOCATION_ELEMENT)) {
@@ -252,7 +257,7 @@ public class CmNamespaceHandler implements NamespaceHandler {
             }
         }
         if (!locations.isEmpty()) {
-            metadata.addProperty("locations", createList(context, locations));
+            metadata.addProperty(builder.newBeanProperty().name("locations").value(createList(context, locations)));
         }
 
         PlaceholdersUtils.validatePlaceholder(metadata, context.getComponentDefinitionRegistry());
@@ -281,8 +286,11 @@ public class CmNamespaceHandler implements NamespaceHandler {
       return ignoreMissingLocations;
     }
 
-    private Metadata parseDefaultProperties(ParserContext context, MutableBeanMetadata enclosingComponent, Element element) {
-        MutableMapMetadata props = context.createMetadata(MutableMapMetadata.class);
+    private Metadata parseDefaultProperties(ParserContext context, MutableBeanMetadata<?> enclosingComponent, Element element) {
+    	Builder builder = context.getMetadataBuilder();
+        
+        List<MapEntry> entries = new ArrayList<MapEntry>();
+        
         NodeList nl = element.getChildNodes();
         for (int i = 0; i < nl.getLength(); i++) {
             Node node = nl.item(i);
@@ -292,27 +300,37 @@ public class CmNamespaceHandler implements NamespaceHandler {
                         || BLUEPRINT_CM_NAMESPACE_1_1.equals(e.getNamespaceURI())) {
                     if (nodeNameEquals(e, PROPERTY_ELEMENT)) {
                         BeanProperty prop = context.parseElement(BeanProperty.class, enclosingComponent, e);
-                        props.addEntry(createValue(context, prop.getName(), String.class.getName()), prop.getValue());
+                        entries.add(builder.newMapEntry().key(createValue(context, prop.getName(), String.class.getName())).value(prop.getValue()));
                     }
                 }
             }
         }
-        return props;
+        
+        return builder.newMap().entries(entries);
     }
 
     private ComponentMetadata parseManagedServiceFactory(ParserContext context, Element element) {
         String id = getId(context, element);
 
-        MutableBeanMetadata factoryMetadata = context.createMetadata(MutableBeanMetadata.class);
+        Builder builder = context.getMetadataBuilder();
+        MutableBeanMetadata<BeanMetadata> factoryMetadata = builder.newBean();
+        
         generateIdIfNeeded(context, factoryMetadata);
-        factoryMetadata.addProperty("id", createValue(context, factoryMetadata.getId()));
-        factoryMetadata.setScope(BeanMetadata.SCOPE_SINGLETON);
-        factoryMetadata.setRuntimeClass(CmManagedServiceFactory.class);
-        factoryMetadata.setInitMethod("init");
-        factoryMetadata.setDestroyMethod("destroy");
-        factoryMetadata.addProperty("configAdmin", createConfigAdminProxy(context));
-        factoryMetadata.addProperty("blueprintContainer", createRef(context, "blueprintContainer"));
-        factoryMetadata.addProperty("factoryPid", createValue(context, element.getAttribute(FACTORY_PID_ATTRIBUTE)));
+        
+        factoryMetadata
+        	.scope(BeanMetadata.SCOPE_SINGLETON)
+        	.initMethod("init")
+        	.destroyMethod("destroy")
+        	.addProperty("id", createValue(context, factoryMetadata.getId()))
+        	.addProperty("configAdmin", createConfigAdminProxy(context))
+        	.addProperty("blueprintContainer", createRef(context, "blueprintContainer"))
+        	.addProperty("factoryPid", createValue(context, element.getAttribute(FACTORY_PID_ATTRIBUTE)));
+        
+        factoryMetadata.addCustomData(ExtNamespaceHandler.class, 
+        		ExtNamespaceHandler.RUNTIME_CLASS_KEY, 
+        		CmManagedServiceFactory.class);
+        
+        
         String autoExport = element.hasAttribute(AUTO_EXPORT_ATTRIBUTE) ? element.getAttribute(AUTO_EXPORT_ATTRIBUTE) : AUTO_EXPORT_DEFAULT;
         if (AUTO_EXPORT_DISABLED.equals(autoExport)) {
             autoExport = Integer.toString(ServiceMetadata.AUTO_EXPORT_DISABLED);
@@ -360,16 +378,18 @@ public class CmNamespaceHandler implements NamespaceHandler {
                 } else if (BLUEPRINT_CM_NAMESPACE_1_0.equals(e.getNamespaceURI())
                         || BLUEPRINT_CM_NAMESPACE_1_1.equals(e.getNamespaceURI())) {
                     if (nodeNameEquals(e, MANAGED_COMPONENT_ELEMENT)) {
-                        MutableBeanMetadata managedComponent = context.parseElement(MutableBeanMetadata.class, null, e);
+                        MutableBeanMetadata<BeanMetadata> managedComponent = context.parseElement(MutableBeanMetadata.class, null, e);
                         generateIdIfNeeded(context, managedComponent);
-                        managedComponent.setScope(BeanMetadata.SCOPE_PROTOTYPE);
+                        managedComponent.scope(BeanMetadata.SCOPE_PROTOTYPE);
+                        
                         // destroy-method on managed-component has different signature than on regular beans
                         // so we'll handle it differently
                         String destroyMethod = managedComponent.getDestroyMethod();
                         if (destroyMethod != null) {
                             factoryMetadata.addProperty("componentDestroyMethod", createValue(context, destroyMethod));
-                            managedComponent.setDestroyMethod(null);
+                            managedComponent.destroyMethod(null);
                         }
+                        
                         context.getComponentDefinitionRegistry().registerComponentDefinition(managedComponent);
                         factoryMetadata.addProperty("managedComponentName", createIdRef(context, managedComponent.getId()));
                     }
@@ -377,50 +397,51 @@ public class CmNamespaceHandler implements NamespaceHandler {
             }
         }
 
-        MutableCollectionMetadata listenerCollection = context.createMetadata(MutableCollectionMetadata.class);
-        listenerCollection.setCollectionClass(List.class);
+        List<BeanMetadata> values = new ArrayList<BeanMetadata>();
         for (RegistrationListener listener : listeners) {
-            MutableBeanMetadata bean = context.createMetadata(MutableBeanMetadata.class);
-            bean.setRuntimeClass(ServiceListener.class);
-            bean.addProperty("listener", listener.getListenerComponent());
-            bean.addProperty("registerMethod", createValue(context, listener.getRegistrationMethod()));
-            bean.addProperty("unregisterMethod", createValue(context, listener.getUnregistrationMethod()));
-            listenerCollection.addValue(bean);
+            MutableBeanMetadata<BeanMetadata> bean = builder.newBean()
+            	.addProperty("listener", listener.getListenerComponent())
+            	.addProperty("registerMethod", createValue(context, listener.getRegistrationMethod()))
+            	.addProperty("unregisterMethod", createValue(context, listener.getUnregistrationMethod()));
+            
+            bean.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY, ServiceListener.class);
+            values.add(bean);
         }
-        factoryMetadata.addProperty("listeners", listenerCollection);
+        
+        factoryMetadata.addProperty("listeners", builder.newCollection().collectionClass(List.class).values(values));
         
         context.getComponentDefinitionRegistry().registerComponentDefinition(factoryMetadata);
         
-        MutableBeanMetadata mapMetadata = context.createMetadata(MutableBeanMetadata.class);
-        mapMetadata.setScope(BeanMetadata.SCOPE_SINGLETON);
-        mapMetadata.setId(id);
-        mapMetadata.setFactoryComponent(createRef(context, factoryMetadata.getId()));
-        mapMetadata.setFactoryMethod("getServiceMap");
-        return mapMetadata;
+        return builder.newBean().scope(BeanMetadata.SCOPE_SINGLETON).id(id).factoryComponent(createRef(context, factoryMetadata.getId())).factoryMethod("getServiceMap");
     }
 
     private ComponentMetadata decorateCmProperties(ParserContext context, Element element, ComponentMetadata component) {
-        generateIdIfNeeded(context, ((MutableComponentMetadata) component));
-        MutableBeanMetadata metadata = context.createMetadata(MutableBeanMetadata.class);
-        metadata.setProcessor(true);
-        metadata.setId(getId(context, element));
-        metadata.setRuntimeClass(CmProperties.class);
+        generateIdIfNeeded(context, ((MutableComponentMetadata<?,?>) component));
+        
+        MutableBeanMetadata<BeanMetadata> metadata = context.getMetadataBuilder().newBean()
+        	.id(getId(context, element));
+        
+        metadata.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.PROCESSOR_KEY, true);
+        metadata.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY, CmProperties.class);
+        
         String persistentId = element.getAttribute(PERSISTENT_ID_ATTRIBUTE);
         // if persistentId is "" the cm-properties element in nested in managed-service-factory
         // and the configuration object will come from the factory. So we only really need to register
         // ManagedService if the persistentId is not an empty string.
         if (persistentId.length() > 0) {
-            metadata.setInitMethod("init");
-            metadata.setDestroyMethod("destroy");
+            metadata.initMethod("init").destroyMethod("destroy");
         }
-        metadata.addProperty("blueprintContainer", createRef(context, "blueprintContainer"));
-        metadata.addProperty("configAdmin", createConfigAdminProxy(context));
-        metadata.addProperty("managedObjectManager", createRef(context, MANAGED_OBJECT_MANAGER_NAME));
-        metadata.addProperty("persistentId", createValue(context, persistentId));
+        
+        metadata.addProperty("blueprintContainer", createRef(context, "blueprintContainer"))
+        	.addProperty("configAdmin", createConfigAdminProxy(context))
+        	.addProperty("managedObjectManager", createRef(context, MANAGED_OBJECT_MANAGER_NAME))
+        	.addProperty("persistentId", createValue(context, persistentId))
+        	.addProperty("serviceId", createIdRef(context, component.getId()));
+        
         if (element.hasAttribute(UPDATE_ATTRIBUTE)) {
             metadata.addProperty("update", createValue(context, element.getAttribute(UPDATE_ATTRIBUTE)));
         }
-        metadata.addProperty("serviceId", createIdRef(context, component.getId()));
+        
         context.getComponentDefinitionRegistry().registerComponentDefinition(metadata);
         return component;
     }
@@ -429,33 +450,40 @@ public class CmNamespaceHandler implements NamespaceHandler {
         if (!(component instanceof MutableBeanMetadata)) {
             throw new ComponentDefinitionException("Element " + MANAGED_PROPERTIES_ELEMENT + " must be used inside a <bp:bean> element");
         }
-        generateIdIfNeeded(context, ((MutableBeanMetadata) component));
-        MutableBeanMetadata metadata = context.createMetadata(MutableBeanMetadata.class);
-        metadata.setProcessor(true);
-        metadata.setId(getId(context, element));
-        metadata.setRuntimeClass(CmManagedProperties.class);
+        generateIdIfNeeded(context, ((MutableBeanMetadata<?>) component));
+        
+        MutableBeanMetadata<BeanMetadata> metadata = context.getMetadataBuilder().newBean()
+        	.id(getId(context, element));
+        
+        metadata.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.PROCESSOR_KEY, true);
+        metadata.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY, CmManagedProperties.class);
+        
+        
         String persistentId = element.getAttribute(PERSISTENT_ID_ATTRIBUTE);
         // if persistentId is "" the managed properties element in nested in managed-service-factory
         // and the configuration object will come from the factory. So we only really need to register
         // ManagedService if the persistentId is not an empty string.
         if (persistentId.length() > 0) {
-            metadata.setInitMethod("init");
-            metadata.setDestroyMethod("destroy");
+            metadata.initMethod("init").destroyMethod("destroy");
         }
-        metadata.addProperty("blueprintContainer", createRef(context, "blueprintContainer"));
-        metadata.addProperty("configAdmin", createConfigAdminProxy(context));
-        metadata.addProperty("managedObjectManager", createRef(context, MANAGED_OBJECT_MANAGER_NAME));
-        metadata.addProperty("persistentId", createValue(context, persistentId));
+        
+        metadata.addProperty("blueprintContainer", createRef(context, "blueprintContainer"))
+        	.addProperty("configAdmin", createConfigAdminProxy(context))
+        	.addProperty("managedObjectManager", createRef(context, MANAGED_OBJECT_MANAGER_NAME))
+        	.addProperty("persistentId", createValue(context, persistentId))
+        	.addProperty("beanName", createIdRef(context, component.getId()));
+        	
         String updateStrategy = element.getAttribute(UPDATE_STRATEGY_ATTRIBUTE);
         if (updateStrategy != null) {
             metadata.addProperty("updateStrategy", createValue(context, updateStrategy));
         }
+        
         if (element.hasAttribute(UPDATE_METHOD_ATTRIBUTE)) {
             metadata.addProperty("updateMethod", createValue(context, element.getAttribute(UPDATE_METHOD_ATTRIBUTE)));
         } else if ("component-managed".equals(updateStrategy)) {
             throw new ComponentDefinitionException(UPDATE_METHOD_ATTRIBUTE + " attribute must be set when " + UPDATE_STRATEGY_ATTRIBUTE + " is set to 'component-managed'");
         }
-        metadata.addProperty("beanName", createIdRef(context, component.getId()));
+        
         context.getComponentDefinitionRegistry().registerComponentDefinition(metadata);
         return component;
     }
@@ -468,21 +496,23 @@ public class CmNamespaceHandler implements NamespaceHandler {
      * @return a metadata pointing to the config admin
      */
     private Metadata createConfigAdminProxy(ParserContext context) {
-        MutableBeanMetadata bean = context.createMetadata(MutableBeanMetadata.class);
-        bean.setRuntimeClass(CmNamespaceHandler.class);
-        bean.setFactoryMethod("getConfigAdmin");
-        bean.setActivation(MutableBeanMetadata.ACTIVATION_LAZY);
-        bean.setScope(MutableBeanMetadata.SCOPE_PROTOTYPE);
-        return bean;
+    	MutableBeanMetadata<BeanMetadata> meta = context.getMetadataBuilder().newBean()
+    		.factoryMethod("getConfigAdmin")
+    		.activation(BeanMetadata.ACTIVATION_LAZY)
+    		.scope(BeanMetadata.SCOPE_PROTOTYPE);
+    	
+    	meta.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY, CmNamespaceHandler.class);
+    	return meta;
     }
 
     private void registerManagedObjectManager(ParserContext context, ComponentDefinitionRegistry registry) {
         if (registry.getComponentDefinition(MANAGED_OBJECT_MANAGER_NAME) == null) {
-            MutableBeanMetadata beanMetadata = context.createMetadata(MutableBeanMetadata.class);
-            beanMetadata.setScope(BeanMetadata.SCOPE_SINGLETON);
-            beanMetadata.setId(MANAGED_OBJECT_MANAGER_NAME);
-            beanMetadata.setRuntimeClass(ManagedObjectManager.class);            
-            registry.registerComponentDefinition(beanMetadata);
+        	MutableBeanMetadata<BeanMetadata> meta = context.getMetadataBuilder()
+        		.newBean()
+        		.scope(BeanMetadata.SCOPE_SINGLETON)
+        		.id(MANAGED_OBJECT_MANAGER_NAME);
+        	meta.addCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY, ManagedObjectManager.class);
+            registry.registerComponentDefinition(meta);
         }
     }
     
@@ -491,32 +521,26 @@ public class CmNamespaceHandler implements NamespaceHandler {
     }
 
     private static ValueMetadata createValue(ParserContext context, String value, String type) {
-        MutableValueMetadata m = context.createMetadata(MutableValueMetadata.class);
-        m.setStringValue(value);
-        m.setType(type);
-        return m;
+    	return context.getMetadataBuilder().newValue().stringValue(value).type(type);
     }
 
     private static RefMetadata createRef(ParserContext context, String value) {
-        MutableRefMetadata m = context.createMetadata(MutableRefMetadata.class);
-        m.setComponentId(value);
-        return m;
+    	return context.getMetadataBuilder().newRef().componentId(value);
     }
 
     private static IdRefMetadata createIdRef(ParserContext context, String value) {
-        MutableIdRefMetadata m = context.createMetadata(MutableIdRefMetadata.class);
-        m.setComponentId(value);
-        return m;
+    	return context.getMetadataBuilder().newIdRef().componentId(value);
     }
 
     private static CollectionMetadata createList(ParserContext context, List<String> list) {
-        MutableCollectionMetadata m = context.createMetadata(MutableCollectionMetadata.class);
-        m.setCollectionClass(List.class);
-        m.setValueType(String.class.getName());
+    	Builder builder = context.getMetadataBuilder();
+    	
+    	List<ValueMetadata> values = new ArrayList<ValueMetadata>();
         for (String v : list) {
-            m.addValue(createValue(context, v, String.class.getName()));
+            values.add(createValue(context, v, String.class.getName()));
         }
-        return m;
+        
+        return builder.newCollection().collectionClass(List.class).valueType(String.class.getName()).values(values);
     }
 
     private static String getTextValue(Element element) {
@@ -547,9 +571,9 @@ public class CmNamespaceHandler implements NamespaceHandler {
         }
     }
 
-    public void generateIdIfNeeded(ParserContext context, MutableComponentMetadata metadata) {
+    public void generateIdIfNeeded(ParserContext context, MutableComponentMetadata<?,?> metadata) {
         if (metadata.getId() == null) {
-            metadata.setId(generateId(context));
+            metadata.id(generateId(context));
         }
     }
 

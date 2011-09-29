@@ -25,16 +25,16 @@ import java.util.regex.Pattern;
 
 import org.apache.aries.blueprint.ComponentDefinitionRegistry;
 import org.apache.aries.blueprint.ComponentDefinitionRegistryProcessor;
-import org.apache.aries.blueprint.mutable.MutableBeanArgument;
-import org.apache.aries.blueprint.mutable.MutableBeanMetadata;
-import org.apache.aries.blueprint.mutable.MutableBeanProperty;
-import org.apache.aries.blueprint.mutable.MutableCollectionMetadata;
-import org.apache.aries.blueprint.mutable.MutableMapEntry;
-import org.apache.aries.blueprint.mutable.MutableMapMetadata;
-import org.apache.aries.blueprint.mutable.MutablePropsMetadata;
-import org.apache.aries.blueprint.mutable.MutableReferenceListener;
-import org.apache.aries.blueprint.mutable.MutableRegistrationListener;
-import org.apache.aries.blueprint.mutable.MutableServiceMetadata;
+import org.apache.aries.blueprint.metadata.MutableBeanArgument;
+import org.apache.aries.blueprint.metadata.MutableBeanMetadata;
+import org.apache.aries.blueprint.metadata.MutableBeanProperty;
+import org.apache.aries.blueprint.metadata.MutableCollectionMetadata;
+import org.apache.aries.blueprint.metadata.MutableMapEntry;
+import org.apache.aries.blueprint.metadata.MutableMapMetadata;
+import org.apache.aries.blueprint.metadata.MutablePropsMetadata;
+import org.apache.aries.blueprint.metadata.MutableReferenceListener;
+import org.apache.aries.blueprint.metadata.MutableRegistrationListener;
+import org.apache.aries.blueprint.metadata.MutableServiceMetadata;
 import org.osgi.service.blueprint.container.ComponentDefinitionException;
 import org.osgi.service.blueprint.reflect.BeanArgument;
 import org.osgi.service.blueprint.reflect.BeanMetadata;
@@ -110,82 +110,71 @@ public abstract class AbstractPropertyPlaceholder implements ComponentDefinition
 
     protected Metadata processBeanMetadata(BeanMetadata component) {
         for (BeanArgument arg :  component.getArguments()) {
-            ((MutableBeanArgument) arg).setValue(processMetadata(arg.getValue()));
+            ((MutableBeanArgument<?>) arg).value(processMetadata(arg.getValue()));
         }
         for (BeanProperty prop : component.getProperties()) {
-            ((MutableBeanProperty) prop).setValue(processMetadata(prop.getValue()));
+            ((MutableBeanProperty<?>) prop).value(processMetadata(prop.getValue()));
         }
-        ((MutableBeanMetadata) component).setFactoryComponent((Target) processMetadata(component.getFactoryComponent()));
+        ((MutableBeanMetadata<?>) component).factoryComponent((Target) processMetadata(component.getFactoryComponent()));
         return component;
     }
 
     protected Metadata processServiceMetadata(ServiceMetadata component) {
-        ((MutableServiceMetadata) component).setServiceComponent((Target) processMetadata(component.getServiceComponent()));
+        ((MutableServiceMetadata<?>) component).serviceComponent((Target) processMetadata(component.getServiceComponent()));
         List<MapEntry> entries = new ArrayList<MapEntry>(component.getServiceProperties());
-        for (MapEntry entry : entries) {
-            ((MutableServiceMetadata) component).removeServiceProperty(entry);
-        }
-        for (MapEntry entry : processMapEntries(entries)) {
-            ((MutableServiceMetadata) component).addServiceProperty(entry);
-        }
+
+        ((MutableServiceMetadata<?>) component).serviceProperties(processMapEntries(entries));
+        
         for (RegistrationListener listener : component.getRegistrationListeners()) {
-            ((MutableRegistrationListener) listener).setListenerComponent((Target) processMetadata(listener.getListenerComponent()));
+            ((MutableRegistrationListener<?>) listener).listenerComponent((Target) processMetadata(listener.getListenerComponent()));
         }
         return component;
     }
 
     protected Metadata processReferenceMetadata(ReferenceMetadata component) {
         for (ReferenceListener listener : component.getReferenceListeners()) {
-            ((MutableReferenceListener) listener).setListenerComponent((Target) processMetadata(listener.getListenerComponent()));
+            ((MutableReferenceListener<?>) listener).listenerComponent((Target) processMetadata(listener.getListenerComponent()));
         }
         return component;
     }
 
     protected Metadata processRefCollectionMetadata(ReferenceListMetadata component) {
         for (ReferenceListener listener : component.getReferenceListeners()) {
-            ((MutableReferenceListener) listener).setListenerComponent((Target) processMetadata(listener.getListenerComponent()));
+            ((MutableReferenceListener<?>) listener).listenerComponent((Target) processMetadata(listener.getListenerComponent()));
         }
         return component;
     }
 
     protected Metadata processPropsMetadata(PropsMetadata metadata) {
         List<MapEntry> entries = new ArrayList<MapEntry>(metadata.getEntries());
-        for (MapEntry entry : entries) {
-            ((MutablePropsMetadata) metadata).removeEntry(entry);
-        }
-        for (MapEntry entry : processMapEntries(entries)) {
-            ((MutablePropsMetadata) metadata).addEntry(entry);
-        }
+        ((MutablePropsMetadata<?>) metadata).entries(processMapEntries(entries));
         return metadata;
     }
 
     protected Metadata processMapMetadata(MapMetadata metadata) {
         List<MapEntry> entries = new ArrayList<MapEntry>(metadata.getEntries());
-        for (MapEntry entry : entries) {
-            ((MutableMapMetadata) metadata).removeEntry(entry);
-        }
-        for (MapEntry entry : processMapEntries(entries)) {
-            ((MutableMapMetadata) metadata).addEntry(entry);
-        }
+        ((MutableMapMetadata<?>) metadata).entries(processMapEntries(entries));
         return metadata;
     }
 
     protected List<MapEntry> processMapEntries(List<MapEntry> entries) {
         for (MapEntry entry : entries) {
-            ((MutableMapEntry) entry).setKey((NonNullMetadata) processMetadata(entry.getKey()));
-            ((MutableMapEntry) entry).setValue(processMetadata(entry.getValue()));
+            ((MutableMapEntry<?>) entry).key((NonNullMetadata) processMetadata(entry.getKey()));
+            ((MutableMapEntry<?>) entry).value(processMetadata(entry.getValue()));
         }
         return entries;
     }
 
     protected Metadata processCollectionMetadata(CollectionMetadata metadata) {
         List<Metadata> values = new ArrayList<Metadata>(metadata.getValues());
-        for (Metadata value : values) {
-            ((MutableCollectionMetadata) metadata).removeValue(value);
+        List<Metadata> processed = new ArrayList<Metadata>();
+        
+        for (Metadata meta : values) {
+        	processed.add(processMetadata(meta));
         }
-        for (Metadata value : values) {
-            ((MutableCollectionMetadata) metadata).addValue(processMetadata(value));
-        }
+        
+        ((MutableCollectionMetadata<?>) metadata).values(processed);
+
         return metadata;
     }
 

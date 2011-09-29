@@ -49,15 +49,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.aries.blueprint.BlueprintConstants;
 import org.apache.aries.blueprint.ComponentDefinitionRegistryProcessor;
-import org.apache.aries.blueprint.ExtendedBeanMetadata;
 import org.apache.aries.blueprint.ExtendedBlueprintContainer;
 import org.apache.aries.blueprint.NamespaceHandler;
 import org.apache.aries.blueprint.Processor;
 import org.apache.aries.blueprint.di.Recipe;
 import org.apache.aries.blueprint.di.Repository;
+import org.apache.aries.blueprint.ext.ExtNamespaceHandler;
+import org.apache.aries.blueprint.metadata.ExtensibleMetadata;
+import org.apache.aries.blueprint.metadata.impl.MetadataUtil;
 import org.apache.aries.blueprint.namespace.ComponentDefinitionRegistryImpl;
 import org.apache.aries.blueprint.namespace.NamespaceHandlerRegistryImpl;
-import org.apache.aries.blueprint.reflect.MetadataUtil;
 import org.apache.aries.blueprint.reflect.PassThroughMetadataImpl;
 import org.apache.aries.blueprint.utils.HeaderParser;
 import org.apache.aries.blueprint.utils.JavaUtils;
@@ -476,13 +477,17 @@ public class BlueprintContainerImpl implements ExtendedBlueprintContainer, Names
     private void processProcessors() throws Exception {
         // Instanciate ComponentDefinitionRegistryProcessor and BeanProcessor
         for (BeanMetadata bean : getMetadata(BeanMetadata.class)) {
-            if (bean instanceof ExtendedBeanMetadata && !((ExtendedBeanMetadata) bean).isProcessor()) {
-                continue;
-            }     
+        	if (bean instanceof ExtensibleMetadata) {
+        		Boolean processor = (Boolean) ((ExtensibleMetadata) bean).retrieveCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.PROCESSOR_KEY);
+        		
+        		if (processor == null || !processor) continue;        		
+        	}
             
             Class clazz = null;
-            if (bean instanceof ExtendedBeanMetadata) {
-                clazz = ((ExtendedBeanMetadata) bean).getRuntimeClass();
+            if (bean instanceof ExtensibleMetadata) {
+            	Class<?> runtimeClass = (Class<?>) ((ExtensibleMetadata) bean).retrieveCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY);
+            	
+            	if (runtimeClass != null) clazz = runtimeClass;
             }            
             if (clazz == null && bean.getClassName() != null) {
                 clazz = loadClass(bean.getClassName());

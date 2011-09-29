@@ -18,7 +18,6 @@ package org.apache.aries.blueprint;
 
 import org.apache.aries.blueprint.metadata.Builder;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
-import org.osgi.service.blueprint.reflect.Metadata;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -40,22 +39,6 @@ public interface ParserContext  {
      * @returns the enclosing component's metadata or null if there is no enclosing component
      */
     ComponentMetadata getEnclosingComponent();
-    
-    /**
-     * Create a new metadata instance of the given type. The returned
-     * object will also implement the appropriate <code>MutableComponentMetadata</code>
-     * interface, so as to allow the caller to set the properties of the 
-     * metadata.
-     *
-     * Note that the returned object may not be initialised, so callers
-     * should take care to assure every property needed by the blueprint
-     * extender is set.
-     *
-     * @param type the class of the Metadata object to create
-     * @param <T> The expected Metadata type to be created
-     * @return a new instance
-     */
-    <T extends Metadata> T createMetadata(Class<T> type);
 
     /**
      * Invoke the blueprint parser to parse a DOM element.

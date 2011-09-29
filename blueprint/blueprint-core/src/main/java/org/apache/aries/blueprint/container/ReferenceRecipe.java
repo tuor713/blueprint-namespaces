@@ -24,9 +24,10 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.apache.aries.blueprint.ExtendedBlueprintContainer;
-import org.apache.aries.blueprint.ExtendedReferenceMetadata;
 import org.apache.aries.blueprint.di.Recipe;
 import org.apache.aries.blueprint.di.CollectionRecipe;
+import org.apache.aries.blueprint.ext.ExtNamespaceHandler;
+import org.apache.aries.blueprint.metadata.MutableReferenceMetadata;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.blueprint.container.BlueprintEvent;
 import org.osgi.service.blueprint.container.ReifiedType;
@@ -175,9 +176,10 @@ public class ReferenceRecipe extends AbstractServiceReferenceRecipe {
                 if (isStarted()) {
                   boolean failed = true;
                   if (metadata.getAvailability() == ReferenceMetadata.AVAILABILITY_OPTIONAL && 
-                      metadata instanceof ExtendedReferenceMetadata) {
+                      metadata instanceof MutableReferenceMetadata<?>) {
+                	  
                      if (defaultBean == null) {
-                         String defaultBeanId = ((ExtendedReferenceMetadata)metadata).getDefaultBean();
+                         String defaultBeanId = (String) ((MutableReferenceMetadata<?>)metadata).retrieveCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.DEFAULT_BEAN_KEY);
                          if (defaultBeanId != null) {
                            defaultBean = blueprintContainer.getComponentInstance(defaultBeanId);
                            failed = false;

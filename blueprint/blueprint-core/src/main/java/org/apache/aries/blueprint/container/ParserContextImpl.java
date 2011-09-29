@@ -21,7 +21,6 @@ package org.apache.aries.blueprint.container;
 import org.apache.aries.blueprint.ComponentDefinitionRegistry;
 import org.apache.aries.blueprint.ParserContext;
 import org.apache.aries.blueprint.metadata.Builder;
-import org.apache.aries.blueprint.reflect.MetadataUtil;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
 import org.osgi.service.blueprint.reflect.Metadata;
 import org.w3c.dom.Element;
@@ -60,10 +59,6 @@ public class ParserContextImpl implements ParserContext {
 
     public Node getSourceNode() {
         return sourceNode;
-    }
-
-    public <T extends Metadata> T createMetadata(Class<T> type) {
-        return MetadataUtil.createMetadata(type);
     }
 
     public <T> T parseElement(Class<T> type, ComponentMetadata enclosingComponent, Element element) {

@@ -33,6 +33,7 @@ import org.apache.aries.blueprint.sample.FooRegistrationListener;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.service.blueprint.container.BlueprintContainer;
 
@@ -91,7 +92,8 @@ public class TestRegistrationListener extends AbstractIntegrationTest {
 
                 // org.ops4j.pax.exam.container.def.PaxRunnerOptions.vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 
-                equinox().version("3.5.0"));
+                PaxRunnerOptions.rawPaxRunnerOption("config", "classpath:ss-runner.properties"),
+                equinox().version("3.7.0.v20110613"));
         options = updateOptions(options);
         return options;
     }

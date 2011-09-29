@@ -43,9 +43,7 @@ public class NSHandlerTwo implements NamespaceHandler{
     
     public static String NSURI = "http://ns.handler.two";
     
-    private static String ELT_NAME = "nshandlertwo";
     private static String ATTRIB_ONE = "attribone";
-    private static String ATTRIB_TWO = "attribtwo";
     
     private static List<String> interceptorLog = new ArrayList<String>();
     

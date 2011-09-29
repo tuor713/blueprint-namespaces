@@ -19,8 +19,7 @@
 package org.apache.aries.blueprint.ext;
 
 import org.apache.aries.blueprint.ComponentDefinitionRegistry;
-import org.apache.aries.blueprint.ExtendedBeanMetadata;
-import org.apache.aries.blueprint.mutable.MutableBeanMetadata;
+import org.apache.aries.blueprint.metadata.ExtensibleMetadata;
 import org.osgi.service.blueprint.container.ComponentDefinitionException;
 import org.osgi.service.blueprint.reflect.BeanMetadata;
 import org.osgi.service.blueprint.reflect.BeanProperty;
@@ -34,14 +33,19 @@ import org.osgi.service.blueprint.reflect.ValueMetadata;
  */
 public class PlaceholdersUtils {
 
-    public static void validatePlaceholder(MutableBeanMetadata metadata, ComponentDefinitionRegistry registry) {
+    public static void validatePlaceholder(BeanMetadata metadata, ComponentDefinitionRegistry registry) {
         String prefix = getPlaceholderProperty(metadata, "placeholderPrefix");
         String suffix = getPlaceholderProperty(metadata, "placeholderSuffix");
         for (String id : registry.getComponentDefinitionNames()) {
             ComponentMetadata component = registry.getComponentDefinition(id);
-            if (component instanceof ExtendedBeanMetadata) {
-                ExtendedBeanMetadata bean = (ExtendedBeanMetadata) component;
-                if (bean.getRuntimeClass() != null && AbstractPropertyPlaceholder.class.isAssignableFrom(bean.getRuntimeClass())) {
+            
+            if (component instanceof ExtensibleMetadata && component instanceof BeanMetadata) {
+                ExtensibleMetadata ext = (ExtensibleMetadata) component;
+                BeanMetadata bean = (BeanMetadata) component;
+                
+                Class<?> runtimeClass = (Class<?>) ext.retrieveCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY);
+                
+                if (runtimeClass != null && AbstractPropertyPlaceholder.class.isAssignableFrom(runtimeClass)) {
                     String otherPrefix = getPlaceholderProperty(bean, "placeholderPrefix");
                     String otherSuffix = getPlaceholderProperty(bean, "placeholderSuffix");
                     if (prefix.equals(otherPrefix) && suffix.equals(otherSuffix)) {

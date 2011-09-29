@@ -28,6 +28,7 @@ import java.util.Hashtable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.container.def.PaxRunnerOptions;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
 import org.osgi.framework.Bundle;
 import org.osgi.service.cm.Configuration;
@@ -86,7 +87,8 @@ public class BlueprintContainer2Test extends AbstractIntegrationTest {
             mavenBundle("org.osgi", "org.osgi.compendium"),
 //            org.ops4j.pax.exam.container.def.PaxRunnerOptions.vmOption("-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"),
 
-            equinox().version("3.5.0")
+            PaxRunnerOptions.rawPaxRunnerOption("config", "classpath:ss-runner.properties"),
+            equinox().version("3.7.0.v20110613")
         );
         options = updateOptions(options);
         return options;

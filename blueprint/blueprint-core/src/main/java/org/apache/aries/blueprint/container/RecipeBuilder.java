@@ -27,7 +27,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.aries.blueprint.ComponentDefinitionRegistry;
-import org.apache.aries.blueprint.ExtendedBeanMetadata;
 import org.apache.aries.blueprint.ExtendedBlueprintContainer;
 import org.apache.aries.blueprint.PassThroughMetadata;
 import org.apache.aries.blueprint.di.ArrayRecipe;
@@ -42,8 +41,9 @@ import org.apache.aries.blueprint.di.RefRecipe;
 import org.apache.aries.blueprint.di.ValueRecipe;
 import org.apache.aries.blueprint.ext.ComponentFactoryMetadata;
 import org.apache.aries.blueprint.ext.DependentComponentFactoryMetadata;
-import org.apache.aries.blueprint.mutable.MutableMapMetadata;
-import org.apache.aries.blueprint.reflect.MetadataUtil;
+import org.apache.aries.blueprint.ext.ExtNamespaceHandler;
+import org.apache.aries.blueprint.metadata.ExtensibleMetadata;
+import org.apache.aries.blueprint.metadata.impl.MetadataUtil;
 import org.osgi.service.blueprint.reflect.BeanArgument;
 import org.osgi.service.blueprint.reflect.BeanMetadata;
 import org.osgi.service.blueprint.reflect.BeanProperty;
@@ -192,30 +192,25 @@ public class RecipeBuilder {
     protected MapRecipe getServicePropertiesRecipe(ServiceMetadata metadata) {
         List<MapEntry> properties = metadata.getServiceProperties();
         if (properties != null) {
-            MutableMapMetadata map = MetadataUtil.createMetadata(MutableMapMetadata.class);
-            for (MapEntry e : properties) {
-                map.addEntry(e);
-            }
-            return createMapRecipe(map);
+            return createMapRecipe(new MetadataBuilder().newMap().entries(properties));
         } else {
             return null;
         }
     }
     
     private Object getBeanClass(BeanMetadata beanMetadata) {
-        if (beanMetadata instanceof ExtendedBeanMetadata) {
-            ExtendedBeanMetadata extBeanMetadata = (ExtendedBeanMetadata) beanMetadata;
-            if (extBeanMetadata.getRuntimeClass() != null) {
-                return extBeanMetadata.getRuntimeClass();
-            }
+        if (beanMetadata instanceof ExtensibleMetadata) {
+        	Class<?> runtimeClass = (Class<?>) ((ExtensibleMetadata) beanMetadata).retrieveCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.RUNTIME_CLASS_KEY);
+            if (runtimeClass != null) return runtimeClass;
         }
         return beanMetadata.getClassName();        
     }
     
     private boolean allowsFieldInjection(BeanMetadata beanMetadata) {
-        if (beanMetadata instanceof ExtendedBeanMetadata) {
-            return ((ExtendedBeanMetadata) beanMetadata).getFieldInjection();
-        }
+    	if (beanMetadata instanceof ExtensibleMetadata) {
+    		Boolean fi = ((Boolean) ((ExtensibleMetadata) beanMetadata).retrieveCustomData(ExtNamespaceHandler.class, ExtNamespaceHandler.FIELD_INJECTION_KEY));
+    		if (fi != null) return fi;
+    	}
         return false;
     }
     

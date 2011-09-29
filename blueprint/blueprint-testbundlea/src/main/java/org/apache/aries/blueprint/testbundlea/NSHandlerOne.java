@@ -23,11 +23,9 @@ import java.util.Set;
 import org.apache.aries.blueprint.NamespaceHandler;
 import org.apache.aries.blueprint.ParserContext;
 import org.apache.aries.blueprint.PassThroughMetadata;
-import org.apache.aries.blueprint.mutable.MutableBeanMetadata;
-import org.apache.aries.blueprint.mutable.MutableRefMetadata;
+import org.apache.aries.blueprint.metadata.MutableBeanMetadata;
 import org.osgi.service.blueprint.reflect.ComponentMetadata;
 import org.osgi.service.blueprint.reflect.Metadata;
-import org.osgi.service.blueprint.reflect.RefMetadata;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -63,7 +61,7 @@ public class NSHandlerOne implements NamespaceHandler {
         //without which the code would need to implement our own BeanMetadata,
         //and RefMetadata.
         if(component !=null && component instanceof MutableBeanMetadata){
-            MutableBeanMetadata mbm = (MutableBeanMetadata)component;
+            MutableBeanMetadata<?> mbm = (MutableBeanMetadata<?>)component;
             
             Attr a = (Attr)node;
             Element bean = a.getOwnerElement();            
@@ -73,10 +71,7 @@ public class NSHandlerOne implements NamespaceHandler {
             //if this were not a test, we might attempt to ensure this ref existed
             String passthruref = bean.getAttributeNS(NSURI,ATTRIB_TWO);
             
-            MutableRefMetadata ref = (MutableRefMetadata)context.createMetadata(RefMetadata.class);
-            ref.setComponentId(passthruref);
-            
-            mbm.addProperty(propname, ref);
+            mbm.addProperty(propname, context.getMetadataBuilder().newRef().componentId(passthruref));
         }
         return component;
     }

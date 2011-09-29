@@ -18,25 +18,21 @@
  */
 package org.apache.aries.blueprint.reflect;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.aries.blueprint.PassThroughMetadata;
-import org.apache.aries.blueprint.mutable.MutablePassThroughMetadata;
+import org.osgi.service.blueprint.reflect.ComponentMetadata;
 
 /**
  * A metadata for environment managers.
  *
  * @version $Rev: 896324 $, $Date: 2010-01-06 06:05:04 +0000 (Wed, 06 Jan 2010) $
  */
-public class PassThroughMetadataImpl extends ComponentMetadataImpl implements MutablePassThroughMetadata {
+public class PassThroughMetadataImpl implements ComponentMetadata, PassThroughMetadata {
 
-    private Object object;
-
-    public PassThroughMetadataImpl() {
-    }
-
-    public PassThroughMetadataImpl(PassThroughMetadata source) {
-        super(source);
-        this.object = source.getObject();
-    }
+    private final Object object;
+    private final String id;
 
     public PassThroughMetadataImpl(String id, Object object) {
         this.id = id;
@@ -47,7 +43,15 @@ public class PassThroughMetadataImpl extends ComponentMetadataImpl implements Mu
         return object;
     }
 
-    public void setObject(Object object) {
-        this.object = object;
-    }
+	public int getActivation() {
+		return ComponentMetadata.ACTIVATION_EAGER;
+	}
+
+	public List<String> getDependsOn() {
+		return Collections.emptyList();
+	}
+
+	public String getId() {
+		return id;
+	}
 }

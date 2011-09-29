@@ -49,7 +49,7 @@ public class MutableCollectionMetadataImpl implements MutableCollectionMetadata<
 		return this;
 	}
 
-	public MutableCollectionMetadata<CollectionMetadata> values(List<Metadata> values) {
+	public MutableCollectionMetadata<CollectionMetadata> values(List<? extends Metadata> values) {
 		this.values = new ArrayList<Metadata>(values);
 		return this;
 	}

@@ -10,5 +10,5 @@ public interface MutableCollectionMetadata<T extends CollectionMetadata> extends
 	MutableCollectionMetadata<T> valueType(String type);
 	
 	MutableCollectionMetadata<T> values(Metadata ... values);
-	MutableCollectionMetadata<T> values(List<Metadata> values);
+	MutableCollectionMetadata<T> values(List<? extends Metadata> values);
 }
